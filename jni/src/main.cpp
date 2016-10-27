@@ -350,8 +350,8 @@ extern
     PLAYER_SCORE = 0;
     CRAFT = 0;
     CRAFT_ANGULAR_VELOCITY = 0.25;
-    CRAFT_MAX_SPEED = ScaleItemToDevice (448);
-    CRAFT_ACCELERATION = ScaleItemToDevice (71680);
+    CRAFT_MAX_SPEED = ScaleItemToDevice (896);
+    CRAFT_ACCELERATION = ScaleItemToDevice (143360);
     CRAFT_SIZE = ScaleItemToDevice (50);
     CRAFT_COLLISION = 0;
     CRAFT_THRUSTING = 0;
