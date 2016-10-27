@@ -160,6 +160,8 @@ double
 int
   CRAFT_THRUSTING;
 int
+  CRAFT_REVERSE_THRUSTING;
+int
   CRAFT_COLLISION;
 Polygon2D *
   TRANSFORMATION_POLY1;
@@ -353,6 +355,7 @@ extern
     CRAFT_SIZE = ScaleItemToDevice (50);
     CRAFT_COLLISION = 0;
     CRAFT_THRUSTING = 0;
+    CRAFT_REVERSE_THRUSTING = 0;
     CRAFT_INVINCIBILITY_TIME = 5000;
     SECTOR = 1;
     VELOCITY_CHANGE_X = 0.0;
@@ -636,7 +639,7 @@ extern
                             {
                               CRAFT_THRUSTING = 1;
                               CHN_THRUST = bb_playsound (SND_THRUST);
-                              THRUST_START_TIME = SDL_GetTicks ();
+                              THRUST_START_TIME = CURRENT_TIME;
                             }
                         }
                       else
@@ -644,6 +647,15 @@ extern
                           CRAFT_THRUSTING = 0;
                         }
 
+                      if (angle >= 45.0 && angle < 135.0)
+                        {
+                          CRAFT_REVERSE_THRUSTING = 1;
+                        }
+                      else
+                        {
+                          CRAFT_REVERSE_THRUSTING = 0;
+                        }
+		      
                       if (angle >= -135.0 && angle < -45.0)
                         {
                           VELOCITY_CHANGE_X
@@ -725,6 +737,11 @@ extern
                       VELOCITY_CHANGE_Y = 0.0;
                     }
 
+		  if(CRAFT_REVERSE_THRUSTING)
+		    {
+		      CRAFT_REVERSE_THRUSTING = 0;
+		    }
+
                   if (sqrt
                       ((pixel_x -
                         FIRE_BUTTON_X) *
@@ -773,6 +790,15 @@ extern
                           CRAFT_THRUSTING = 0;
                         }
 
+		      if (angle >= 45.0 && angle < 135.0)
+                        {
+                          CRAFT_REVERSE_THRUSTING = 1;
+                        }
+                      else
+                        {
+                          CRAFT_REVERSE_THRUSTING = 0;
+                        }
+		      
                       if (angle >= -135.0 && angle < -45.0)
                         {
                           VELOCITY_CHANGE_X
@@ -827,6 +853,32 @@ extern
               }
 
           }
+
+	if(CRAFT_THRUSTING == 0 && CRAFT_REVERSE_THRUSTING == 0)
+	  {
+	    if(CRAFT->entity->velocity->x != 0.0 || CRAFT->entity->velocity->y != 0.0)
+	      {
+		float
+		  speed =
+		  sqrt (CRAFT->entity->velocity->x *
+			CRAFT->entity->velocity->x +
+			CRAFT->entity->velocity->y * CRAFT->entity->velocity->y);
+
+		if(speed <= CRAFT_ACCELERATION)
+		  {
+		    CRAFT->entity->velocity->x = 0.0;
+		    CRAFT->entity->velocity->y = 0.0;
+		  }
+		else
+		  {
+		    CRAFT->entity->direction =
+		      bb_atan2 (CRAFT->entity->velocity->y, CRAFT->entity->velocity->x);
+		    CRAFT->entity->velocity->x = (speed - CRAFT_ACCELERATION) * bb_cos(CRAFT->entity->direction);
+		    CRAFT->entity->velocity->y = (speed - CRAFT_ACCELERATION) * bb_sin(CRAFT->entity->direction);
+		  }
+
+	      }
+	  }
 
         if (PAUSE_PRESSED)
           {
