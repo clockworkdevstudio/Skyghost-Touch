@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2016, Clockwork Dev Studio
+Copyright (c) 2016-2017, Clockwork Development Studio
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -388,24 +388,19 @@ extern
             distance =
               sqrt (pow ((*e1)->position->x - (*ex)->x, 2) +
                     pow ((*e1)->position->y - (*ex)->y, 2));
-            if (distance < EXPLOSION_SIZE)
+            if (distance <= 0.5 * EXPLOSION_SIZE)
               {
                 angle =
                   bb_atan2 ((*e1)->position->y -
                             (*ex)->y, (*e1)->position->x - (*ex)->x);
 
-                (*e1)->velocity->x +=
-                  (250 *
-                   (1.0 -
-                    distance / EXPLOSION_SIZE) *
-                   bb_cos (angle)) / (*e1)->mass;
-                (*e1)->velocity->y +=
-                  (250 *
-                   (1.0 -
-                    distance / EXPLOSION_SIZE) *
-                   bb_sin (angle)) / (*e1)->mass;
+		(*e1)->velocity->x +=
+		    (ScaleItemToDevice(64) * bb_cos (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
 
-              }
+		(*e1)->velocity->y +=
+		    (ScaleItemToDevice(64) * bb_sin (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
+		
+	      }
           }
       }
   }
@@ -706,6 +701,7 @@ extern
   void
   RotatePolygon2D (Polygon2D * source, Polygon2D * dest, float a)
   {
+
     int
       i;
 

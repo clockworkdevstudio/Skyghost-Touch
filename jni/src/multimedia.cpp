@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2016, Clockwork Dev Studio
+Copyright (c) 2016-2017, Clockwork Development Studio
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -381,6 +381,7 @@ extern "C"
 
     glDisableVertexAttribArray (position_handle);
 
+    free(indices);
     free (color_data);
     free (vertex_data);
 
@@ -526,8 +527,10 @@ extern "C"
 
     glDisableVertexAttribArray (position_handle);
 
+    free (indices);
     free (color_data);
     free (vertex_data);
+    delete [] vertices;
     return 0;
 
   }
@@ -662,7 +665,7 @@ extern "C"
     free (color_data);
     free (vertex_data);
     free (indices);
-
+    delete [] vertices;
     return 0;
 
   }
@@ -1230,6 +1233,17 @@ extern "C"
     return pings;
   }
 
+  double bb_timerprogress (unsigned int timer_handle)
+  {
+    Timer *timer = (Timer *) timer_handle; 
+    double elapsed;
+    double progress;
+
+    elapsed = SDL_GetTicks () - timer->time;
+    progress = elapsed / 1000.0;
+    return progress;
+  }
+
   void bb_resettimer (unsigned int timer_handle)
   {
     Timer *timer = (Timer *) timer_handle;
@@ -1240,9 +1254,9 @@ extern "C"
     elapsed = SDL_GetTicks () - timer->time;
     pings = elapsed / ((int) (1000.0f / timer->frequency));
     remainder = elapsed % ((int) (1000.0f / timer->frequency));
-    timer->time += pings * ((int) (1000.0f / timer->frequency));
+    timer->time = SDL_GetTicks();
   }
-
+    
   void bb_resumetimer (unsigned int timer_handle)
   {
     Timer *timer = (Timer *) timer_handle;

@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2016, Clockwork Dev Studio
+Copyright (c) 2016-2017, Clockwork Development Studio
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -137,6 +137,8 @@ int
   POLY_COUNT;
 unsigned int
   GAME_TIMER;
+double
+  TIMER_PROGRESS;
 unsigned int
   CURRENT_TIME;
 int
@@ -161,6 +163,10 @@ int
   CRAFT_THRUSTING;
 int
   CRAFT_REVERSE_THRUSTING;
+int
+  CRAFT_ROTATING_CLOCKWISE;
+int
+  CRAFT_ROTATING_ANTICLOCKWISE;
 int
   CRAFT_COLLISION;
 Polygon2D *
@@ -349,13 +355,15 @@ extern
     CRAFT_SHIELDS = 1.0;
     PLAYER_SCORE = 0;
     CRAFT = 0;
-    CRAFT_ANGULAR_VELOCITY = 0.25;
-    CRAFT_MAX_SPEED = ScaleItemToDevice (896);
-    CRAFT_ACCELERATION = ScaleItemToDevice (143360);
+    CRAFT_ANGULAR_VELOCITY = 2;
+    CRAFT_MAX_SPEED = ScaleItemToDevice (12);
+    CRAFT_ACCELERATION = ScaleItemToDevice (340);
     CRAFT_SIZE = ScaleItemToDevice (50);
     CRAFT_COLLISION = 0;
     CRAFT_THRUSTING = 0;
     CRAFT_REVERSE_THRUSTING = 0;
+    CRAFT_ROTATING_CLOCKWISE = 0;
+    CRAFT_ROTATING_ANTICLOCKWISE = 0;
     CRAFT_INVINCIBILITY_TIME = 5000;
     SECTOR = 1;
     VELOCITY_CHANGE_X = 0.0;
@@ -367,7 +375,8 @@ extern
   InitTiming ()
   {
     GAME_TIMER = bb_createtimer (60);
-    CURRENT_TIME = SDL_GetTicks ();
+    TIMER_PROGRESS = 0.0;
+    CURRENT_TIME = CURRENT_TIME;
   }
 
   void
@@ -376,8 +385,8 @@ extern
     ASTEROID_COUNT = 0;
     ASTEROID_MIN_SIZE = ScaleItemToDevice (140);
     ASTEROID_MAX_SIZE = ScaleItemToDevice (20);
-    ASTEROID_MAX_SPEED = 3.0 * DENSITY;
-    ASTEROID_MAX_ANGULAR_VELOCITY = 1.5;
+    ASTEROID_MAX_SPEED = ScaleItemToDevice (12);
+    ASTEROID_MAX_ANGULAR_VELOCITY = 10.0;
     ASTEROID_MIN_MASS = ((BB_GRAPHICS_WIDTH + BB_GRAPHICS_HEIGHT) / 2) * 5;
   }
 
@@ -385,17 +394,15 @@ extern
   InitParticles ()
   {
     PARTICLE_LIFESPAN = 2000;
-    PARTICLE_MAX_VELOCITY = 16.0 * DENSITY;
+    PARTICLE_MAX_VELOCITY = 480.0 * DENSITY;
   }
 
   void
   InitBullets ()
   {
     BULLET_SIZE = ScaleItemToDevice (400);
-    BULLET_VELOCITY = 8;
-    BULLET_LIFETIME =
-      ((BB_GRAPHICS_WIDTH +
-        BB_GRAPHICS_HEIGHT) / 2) / (BULLET_VELOCITY * 60 * DENSITY) * 1000.0;
+    BULLET_VELOCITY = ScaleItemToDevice (2.88);
+    BULLET_LIFETIME = 1000;
     LAST_BULLET_TIME = 0;
     BULLET_DELAY = 500;
   }
@@ -403,8 +410,8 @@ extern
   void
   InitExplosions ()
   {
-    EXPLOSION_SIZE = ScaleItemToDevice (10);
-    EXPLOSION_LIFESPAN = 333;
+    EXPLOSION_SIZE = ScaleItemToDevice (4);
+    EXPLOSION_LIFESPAN = 1000;
   }
 
   void
@@ -469,7 +476,7 @@ extern
     InitText ();
     InitQuitAndPauseCoords ();
 
-    srand (SDL_GetTicks ());
+    srand (SDL_GetTicks());
     memset (&OPTIONS, 0, 4 * sizeof (int));
 
     TRANSFORMATION_POLY1 = CreatePolygon2D (20);
@@ -547,8 +554,7 @@ extern
     int
       i,
       j,
-      k,
-      frames;
+      k;
     int
       done = 0;
     SDL_Event
@@ -561,9 +567,10 @@ extern
     PLAYER_LIVES = 2;
     PLAYER_SCORE = 0;
     bb_playsound (SND_TELEPORTING_ARRIVAL);
-
+    
     while (1)
       {
+	CURRENT_TIME = SDL_GetTicks();
         while (SDL_PollEvent (&event))
           {
 
@@ -655,7 +662,18 @@ extern
                         {
                           CRAFT_REVERSE_THRUSTING = 0;
                         }
-		      
+
+                      if (angle >= -45.0 && angle < 45.0)
+                        {
+                          CRAFT_ROTATING_CLOCKWISE = 1;
+                        }
+
+                      if ((angle >= 135.0
+                           && angle < 180.0) || angle < -135.0)
+                        {
+                          CRAFT_ROTATING_ANTICLOCKWISE = 1;
+                        }
+			
                       if (angle >= -135.0 && angle < -45.0)
                         {
                           VELOCITY_CHANGE_X
@@ -669,7 +687,7 @@ extern
                         }
                       else if (angle >= -45.0 && angle < 45.0)
                         {
-                          ORIENTATION_CHANGE += CRAFT_ANGULAR_VELOCITY;
+		          
                         }
                       else if (angle >= 45.0 && angle < 135.0)
                         {
@@ -686,7 +704,7 @@ extern
                         if ((angle >= 135.0
                              && angle < 180.0) || angle < -135.0)
                         {
-                          ORIENTATION_CHANGE -= CRAFT_ANGULAR_VELOCITY;
+			  
                         }
                     }
 
@@ -731,6 +749,8 @@ extern
                       if (CRAFT_THRUSTING)
                         bb_stopchannel (CHN_THRUST);
                       CRAFT_THRUSTING = 0;
+		      CRAFT_ROTATING_CLOCKWISE = 0;
+		      CRAFT_ROTATING_ANTICLOCKWISE = 0;
                       CONTROLS_ACTIVE = 0;
                       ORIENTATION_CHANGE = 0.0;
                       VELOCITY_CHANGE_X = 0.0;
@@ -782,7 +802,7 @@ extern
                             {
                               CRAFT_THRUSTING = 1;
                               CHN_THRUST = bb_playsound (SND_THRUST);
-                              THRUST_START_TIME = SDL_GetTicks ();
+                              THRUST_START_TIME = CURRENT_TIME;
                             }
                         }
                       else
@@ -798,6 +818,17 @@ extern
                         {
                           CRAFT_REVERSE_THRUSTING = 0;
                         }
+
+                      if (angle >= -45.0 && angle < 45.0)
+                        {
+                          CRAFT_ROTATING_CLOCKWISE = 1;
+                        }
+
+                      if ((angle >= 135.0
+                           && angle < 180.0) || angle < -135.0)
+                        {
+                          CRAFT_ROTATING_ANTICLOCKWISE = 1;
+                        }
 		      
                       if (angle >= -135.0 && angle < -45.0)
                         {
@@ -812,7 +843,7 @@ extern
                         }
                       else if (angle >= -45.0 && angle < 45.0)
                         {
-                          ORIENTATION_CHANGE += CRAFT_ANGULAR_VELOCITY;
+			  
                         }
                       else if (angle >= 45.0 && angle < 135.0)
                         {
@@ -829,9 +860,9 @@ extern
                         if ((angle >= 135.0
                              && angle < 180.0) || angle < -135.0)
                         {
-                          ORIENTATION_CHANGE -= CRAFT_ANGULAR_VELOCITY;
+			  
                         }
-                    }
+		    }
 
                   else if (sqrt
                            ((pixel_x -
@@ -851,8 +882,17 @@ extern
                 }
 
               }
+	    
+	  }
 
-          }
+	if(CRAFT_ROTATING_CLOCKWISE)
+	{
+	    ORIENTATION_CHANGE += CRAFT_ANGULAR_VELOCITY;
+	}
+	else if(CRAFT_ROTATING_ANTICLOCKWISE)
+	{
+	    ORIENTATION_CHANGE -= CRAFT_ANGULAR_VELOCITY;
+	}
 
 	if(CRAFT_THRUSTING == 0 && CRAFT_REVERSE_THRUSTING == 0)
 	  {
@@ -905,19 +945,13 @@ extern
 
         if (GAME_STATE != GS_PAUSED)
           {
+	      TIMER_PROGRESS = bb_timerprogress(GAME_TIMER);
+             UpdateGame ();
 
-            CURRENT_TIME = SDL_GetTicks ();
-            frames = bb_timerpings (GAME_TIMER);
-
-            for (i = 1; i <= frames; i++)
-              {
-                UpdateGame ();
-
-                if (GAME_STATE == GS_FRONT_END)
-                  return;
-
-                bb_resettimer (GAME_TIMER);
-              }
+             if (GAME_STATE == GS_FRONT_END)
+               return;
+	     
+		bb_resettimer (GAME_TIMER);
           }
 
         if (CRAFT_COLLISION)
@@ -950,13 +984,11 @@ extern
             }
           default:
             {
-
-              DrawCraft ();
-              DrawAsteroids ();
+	      DrawCraft ();
+	      DrawAsteroids ();
               //DrawExplosions();
               DrawParticles ();
               DrawBullets ();
-
               DrawFireButton (FIRE_BUTTON_X, FIRE_BUTTON_Y);
               DrawControls (CONTROLS_X, CONTROLS_Y);
               DrawDisplay ();
@@ -1697,7 +1729,8 @@ extern
   {
 
     DrawTextWrapped
-      ("Skyghost Touch 1.0.1 Copyright (C) Clockwork Development Studio 2016. Distributed under the FreeBSD license."
+      ("Skyghost Touch 1.0.2 "
+       "Copyright (C) Clockwork Development Studio 2016-2017. Distributed under the FreeBSD license."
        " Any comments, bug reports or feature requests? Email them to clockworkdevstudio@gmail.com.");
     GradientText (0.5 * BB_GRAPHICS_WIDTH,
                   BB_GRAPHICS_HEIGHT - 2 * FONT_HEIGHT, "[OK]", 1, 0);
@@ -1720,6 +1753,7 @@ extern
     int
       i;
     ASTEROID_COUNT = 0;
+    
     for (i = 0; i < sector; i++)
       {
         CreateAsteroid (bb_rand (0, BB_GRAPHICS_WIDTH),
@@ -1727,6 +1761,7 @@ extern
                         bb_rand (ASTEROID_MIN_SIZE,
                                  ASTEROID_MAX_SIZE), bb_rnd (0.0, 360.0));
       }
+    
   }
 
   void
@@ -1873,8 +1908,12 @@ extern
     CRAFT->entity->velocity->x -= VELOCITY_CHANGE_X;
     CRAFT->entity->velocity->y -= VELOCITY_CHANGE_Y;
 
-    CRAFT->entity->position->x += CRAFT->entity->velocity->x * DENSITY;
-    CRAFT->entity->position->y += CRAFT->entity->velocity->y * DENSITY;
+    VELOCITY_CHANGE_X = 0.0;
+    VELOCITY_CHANGE_Y = 0.0;
+    ORIENTATION_CHANGE = 0.0;
+
+    CRAFT->entity->position->x += CRAFT->entity->velocity->x * TIMER_PROGRESS * DENSITY;
+    CRAFT->entity->position->y += CRAFT->entity->velocity->y * TIMER_PROGRESS * DENSITY;
 
     if (CRAFT->entity->position->x > BB_GRAPHICS_WIDTH)
       CRAFT->entity->position->x = 0;
@@ -1910,7 +1949,7 @@ extern
       }
 
     if (FIRE_BUTTON_ACTIVE
-        && SDL_GetTicks () - LAST_BULLET_TIME >= BULLET_DELAY)
+        && CURRENT_TIME - LAST_BULLET_TIME >= BULLET_DELAY)
       {
         bb_playsound (SND_SHOOT);
         CreateBullet (CRAFT->entity->position->x +
@@ -1920,7 +1959,7 @@ extern
                       CRAFT_SIZE *
                       bb_sin (CRAFT->entity->orientation),
                       CRAFT->entity->orientation);
-        LAST_BULLET_TIME = SDL_GetTicks ();
+        LAST_BULLET_TIME = CURRENT_TIME;
       }
 
     if (CRAFT_THRUSTING)
@@ -1933,9 +1972,9 @@ extern
                         bb_sin (CRAFT->entity->orientation),
                         CRAFT->entity->orientation + 180.0,
                         bb_rand (200, 255), bb_rand (64, 255), 0);
-        if (SDL_GetTicks () - THRUST_START_TIME >= 530)
+        if (CURRENT_TIME - THRUST_START_TIME >= 530)
           {
-            THRUST_START_TIME = SDL_GetTicks ();
+            THRUST_START_TIME = CURRENT_TIME;
             CHN_THRUST = bb_playsound (SND_THRUST);
           }
       }
@@ -1945,6 +1984,7 @@ extern
   void
   DrawCraft ()
   {
+
     if (!(CRAFT->alive))
       {
         return;
@@ -2018,7 +2058,7 @@ extern
     a->entity->position->x = x;
     a->entity->position->y = y;
 
-    speed = bb_rnd (2.0, 5.0);
+    speed = bb_rnd (1.0, ASTEROID_MAX_SPEED);
     a->entity->velocity->x = speed * bb_cos (direction);
     a->entity->velocity->y = speed * bb_sin (direction);
 
@@ -2093,11 +2133,11 @@ extern
               ASTEROID_MAX_SPEED * bb_sin ((*a)->entity->direction);
           }
 
-        (*a)->entity->position->x += (*a)->entity->velocity->x * DENSITY;
-        (*a)->entity->position->y += (*a)->entity->velocity->y * DENSITY;
+        (*a)->entity->position->x += (*a)->entity->velocity->x * TIMER_PROGRESS * DENSITY;
+        (*a)->entity->position->y += (*a)->entity->velocity->y * TIMER_PROGRESS * DENSITY;
 
         (*a)->entity->orientation =
-          AWrap ((*a)->entity->orientation + (*a)->entity->angular_velocity);
+	    AWrap ((*a)->entity->orientation + TIMER_PROGRESS * (*a)->entity->angular_velocity);
 
         if ((*a)->entity->angular_velocity > ASTEROID_MAX_ANGULAR_VELOCITY)
           (*a)->entity->angular_velocity = ASTEROID_MAX_ANGULAR_VELOCITY;
@@ -2458,16 +2498,13 @@ extern
     for (p = PARTICLE_LIST.begin (); p != PARTICLE_LIST.end (); p++)
       {
 
-        (*p)->x = (*p)->x + (*p)->v * bb_cos ((*p)->a);
-        (*p)->y = (*p)->y + (*p)->v * bb_sin ((*p)->a);
+	(*p)->x = (*p)->x + (*p)->v * TIMER_PROGRESS * bb_cos ((*p)->a);
+        (*p)->y = (*p)->y + (*p)->v * TIMER_PROGRESS * bb_sin ((*p)->a);
 
         if (CURRENT_TIME - (*p)->creation_time >= PARTICLE_LIFESPAN)
           {
-            t = p;
-            p++;
-            delete *
-              t;
-            PARTICLE_LIST.erase (t);
+	      delete *p;
+	      p = PARTICLE_LIST.erase(p);
           }
 
       }
@@ -2496,6 +2533,7 @@ extern
   void
   CreateBullet (double x, double y, double a)
   {
+    
     Bullet *
       b;
 
@@ -2528,15 +2566,13 @@ extern
         if ((*b)->y < 0.0)
           (*b)->y = BB_GRAPHICS_HEIGHT + (*b)->y;
 
-        (*b)->x = (*b)->x + BULLET_VELOCITY * bb_cos ((*b)->a) * DENSITY;
-        (*b)->y = (*b)->y + BULLET_VELOCITY * bb_sin ((*b)->a) * DENSITY;
+        (*b)->x = (*b)->x + TIMER_PROGRESS * BULLET_VELOCITY * bb_cos ((*b)->a) * DENSITY;
+        (*b)->y = (*b)->y + TIMER_PROGRESS * BULLET_VELOCITY * bb_sin ((*b)->a) * DENSITY;
 
         if (CURRENT_TIME - (*b)->creation_time >= BULLET_LIFETIME)
           {
-            t = b;
-            b++;
-            delete (*t);
-            BULLET_LIST.erase (t);
+	      delete *b;
+	      b = BULLET_LIST.erase(b);
           }
 
       }
@@ -2598,10 +2634,14 @@ extern
                                (*b)->x -
                                (*a)->entity->position->x,
                                (*b)->y - (*a)->entity->position->y, (*b)->a);
-                a = temp;
+		/*
+		a = temp;
                 delete (*b);
                 BULLET_LIST.erase (b);
                 goto escape;
+		*/
+		delete(*b);
+		b = BULLET_LIST.erase(b);
               }
           }
       escape:;
@@ -2635,11 +2675,8 @@ extern
 
         if (CURRENT_TIME - (*e)->creation_time >= EXPLOSION_LIFESPAN)
           {
-            t = e;
-            e++;
-            delete *
-              t;
-            EXPLOSION_LIST.erase (t);
+	      delete *e;
+	      e = EXPLOSION_LIST.erase(e);
 
           }
 
@@ -2657,6 +2694,9 @@ extern
         bb_oval ((*e)->x - 0.5 * EXPLOSION_SIZE,
                  (*e)->y - 0.5 * EXPLOSION_SIZE, EXPLOSION_SIZE,
                  EXPLOSION_SIZE, 0);
+	bb_oval ((*e)->x,
+                 (*e)->y, 50,
+                 50, 1);
       }
   }
 

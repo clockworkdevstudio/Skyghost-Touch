@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2016, Clockwork Dev Studio
+Copyright (c) 2016-2017, Clockwork Development Studio
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C"
 {
 
+  double ScaleItemToDevice(double item);
+    
   struct Vector2D
   {
     float x, y;

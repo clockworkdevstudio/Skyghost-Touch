@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2016, Clockwork Dev Studio
+Copyright (c) 2016-2017, Clockwork Development Studio
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -102,6 +102,7 @@ extern "C"
   unsigned int bb_createtimer (unsigned int frequency);
   unsigned int bb_waittimer (unsigned int timer_handle);
   unsigned int bb_timerpings (unsigned int timer_handle);
+  double bb_timerprogress (unsigned int timer_handle);
   void bb_resettimer (unsigned int timer_handle);
   void bb_resumetimer (unsigned int timer_handle);
   double bb_timerdelta (unsigned int timer_handle);
