@@ -402,7 +402,7 @@ extern
   {
     BULLET_SIZE = ScaleItemToDevice (400);
     BULLET_VELOCITY = ScaleItemToDevice (2.88);
-    BULLET_LIFETIME = 1000;
+    BULLET_LIFETIME = ScaleItemToDevice(1.7);
     LAST_BULLET_TIME = 0;
     BULLET_DELAY = 500;
   }
@@ -1729,7 +1729,7 @@ extern
   {
 
     DrawTextWrapped
-      ("Skyghost Touch 1.0.2 "
+      ("Skyghost Touch 1.0.3 "
        "Copyright (C) Clockwork Development Studio 2016-2017. Distributed under the FreeBSD license."
        " Any comments, bug reports or feature requests? Email them to clockworkdevstudio@gmail.com.");
     GradientText (0.5 * BB_GRAPHICS_WIDTH,
@@ -2642,6 +2642,7 @@ extern
 		*/
 		delete(*b);
 		b = BULLET_LIST.erase(b);
+                goto escape;
               }
           }
       escape:;
