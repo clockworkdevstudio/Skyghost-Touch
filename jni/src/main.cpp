@@ -1729,7 +1729,7 @@ extern
   {
 
     DrawTextWrapped
-      ("Skyghost Touch 1.0.3 "
+      ("Skyghost Touch 1.0.4 "
        "Copyright (C) Clockwork Development Studio 2016-2017. Distributed under the FreeBSD license."
        " Any comments, bug reports or feature requests? Email them to clockworkdevstudio@gmail.com.");
     GradientText (0.5 * BB_GRAPHICS_WIDTH,
