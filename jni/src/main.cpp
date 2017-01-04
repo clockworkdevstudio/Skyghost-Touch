@@ -2634,6 +2634,7 @@ extern
                                (*b)->x -
                                (*a)->entity->position->x,
                                (*b)->y - (*a)->entity->position->y, (*b)->a);
+                a = temp;		
 		/*
 		a = temp;
                 delete (*b);
