@@ -395,10 +395,10 @@ extern
                             (*ex)->y, (*e1)->position->x - (*ex)->x);
 
 		(*e1)->velocity->x +=
-		    (ScaleItemToDevice(64) * bb_cos (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
+		    (ScaleItemToDevice(128) * bb_cos (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
 
 		(*e1)->velocity->y +=
-		    (ScaleItemToDevice(64) * bb_sin (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
+		    (ScaleItemToDevice(128) * bb_sin (angle) * (1.0 - (distance / (0.5 * EXPLOSION_SIZE))));
 		
 	      }
           }

@@ -185,6 +185,8 @@ double
   ASTEROID_MIN_MASS;
 int
   ASTEROID_COUNT;
+int
+  ASTEROID_DENSITY;
 double
   PARTICLE_MAX_VELOCITY;
 double
@@ -382,12 +384,19 @@ extern
   void
   InitAsteroids ()
   {
+    int area;
+    int pixels_millions;
     ASTEROID_COUNT = 0;
     ASTEROID_MIN_SIZE = ScaleItemToDevice (140);
-    ASTEROID_MAX_SIZE = ScaleItemToDevice (20);
-    ASTEROID_MAX_SPEED = ScaleItemToDevice (12);
+    ASTEROID_MAX_SIZE = ScaleItemToDevice (40);
+    ASTEROID_MAX_SPEED = ScaleItemToDevice (20);
     ASTEROID_MAX_ANGULAR_VELOCITY = 10.0;
-    ASTEROID_MIN_MASS = ((BB_GRAPHICS_WIDTH + BB_GRAPHICS_HEIGHT) / 2) * 5;
+    ASTEROID_MIN_MASS = ScaleItemToDevice(0.2);
+    area = (BB_GRAPHICS_WIDTH * BB_GRAPHICS_HEIGHT);
+    if(area < 1000000)
+	area = 1000000;
+    pixels_millions = area / 1000000;
+    ASTEROID_DENSITY = pixels_millions;
   }
 
   void
@@ -567,9 +576,10 @@ extern
     PLAYER_LIVES = 2;
     PLAYER_SCORE = 0;
     bb_playsound (SND_TELEPORTING_ARRIVAL);
-    
+
     while (1)
       {
+	  
 	CURRENT_TIME = SDL_GetTicks();
         while (SDL_PollEvent (&event))
           {
@@ -593,7 +603,7 @@ extern
                         (WINDOW, &BB_GRAPHICS_WIDTH, &BB_GRAPHICS_HEIGHT);
                       glViewport (0, 0,
                                   BB_GRAPHICS_WIDTH, BB_GRAPHICS_HEIGHT);
-                      bb_resumetimer (GAME_TIMER);
+		      bb_resumetimer (GAME_TIMER);
 
                     }
                   break;
@@ -602,10 +612,10 @@ extern
                 {
 
                   int
-                    pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
+		      pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
                   int
-                    pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
-
+		      pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
+		  
                   if (pixel_x >= PAUSE_X1
                       && pixel_x <= PAUSE_X2
                       && pixel_y >= PAUSE_Y1 && pixel_y <= PAUSE_Y2)
@@ -732,10 +742,11 @@ extern
                 }
               case SDL_FINGERUP:
                 {
+
                   int
-                    pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
+		      pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
                   int
-                    pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
+		      pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
 
                   if (sqrt
                       ((pixel_x -
@@ -760,6 +771,12 @@ extern
 		  if(CRAFT_REVERSE_THRUSTING)
 		    {
 		      CRAFT_REVERSE_THRUSTING = 0;
+		      CRAFT_ROTATING_CLOCKWISE = 0;
+		      CRAFT_ROTATING_ANTICLOCKWISE = 0;
+                      CONTROLS_ACTIVE = 0;
+                      ORIENTATION_CHANGE = 0.0;
+                      VELOCITY_CHANGE_X = 0.0;
+                      VELOCITY_CHANGE_Y = 0.0;
 		    }
 
                   if (sqrt
@@ -777,10 +794,11 @@ extern
                 }
               case SDL_FINGERMOTION:
                 {
+
                   int
-                    pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
+		      pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
                   int
-                    pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
+		      pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
 
                   if (sqrt
                       ((pixel_x -
@@ -1486,7 +1504,7 @@ extern
                     pixel_x = event.tfinger.x * BB_GRAPHICS_WIDTH;
                   int
                     pixel_y = event.tfinger.y * BB_GRAPHICS_HEIGHT;
-
+		  
                   if (sqrt
                       ((pixel_x -
                         CONTROLS_X) * (pixel_x -
@@ -1729,7 +1747,7 @@ extern
   {
 
     DrawTextWrapped
-      ("Skyghost Touch 1.0.4 "
+      ("Skyghost Touch 1.0.5 "
        "Copyright (C) Clockwork Development Studio 2016-2017. Distributed under the FreeBSD license."
        " Any comments, bug reports or feature requests? Email them to clockworkdevstudio@gmail.com.");
     GradientText (0.5 * BB_GRAPHICS_WIDTH,
@@ -1754,7 +1772,7 @@ extern
       i;
     ASTEROID_COUNT = 0;
     
-    for (i = 0; i < sector; i++)
+    for (i = 0; i < sector * ASTEROID_DENSITY; i++)
       {
         CreateAsteroid (bb_rand (0, BB_GRAPHICS_WIDTH),
                         bb_rand (0, BB_GRAPHICS_HEIGHT),
@@ -2320,10 +2338,11 @@ extern
         ar1->entity->position->y = a->entity->position->y + oy;
 
         // initialise other fields in asteroid 1
-
-        ar1->entity->velocity->x = a->entity->velocity->x;
+        double speed = bb_rnd(0.0,ASTEROID_MAX_SPEED);
+	double direction = bb_rnd(0.0,360.0);
+	ar1->entity->velocity->x = speed * bb_cos(direction);
+        ar1->entity->velocity->y = speed * bb_sin(direction);
         ar1->entity->class_ = ENTITY_CLASS_ASTEROID;
-        ar1->entity->velocity->y = a->entity->velocity->y;
         ar1->entity->direction = a->entity->direction;
         ar1->entity->orientation = 0.0;
         ar1->entity->mass = Polygon2DArea (ar1->entity->polygon);
@@ -2412,6 +2431,11 @@ extern
 
         // initialise other fields in asteroid 2
 
+        speed = bb_rnd(0.0,ASTEROID_MAX_SPEED);
+        direction = bb_rnd(0.0,360.0);
+	ar2->entity->velocity->x = speed * bb_cos(direction);
+        ar2->entity->velocity->y = speed * bb_sin(direction);
+	
         ar2->entity->class_ = ENTITY_CLASS_ASTEROID;
         ar2->entity->velocity->x = a->entity->velocity->x;
         ar2->entity->velocity->y = a->entity->velocity->y;
@@ -2435,13 +2459,17 @@ extern
 
         if (ar1->entity->mass < ASTEROID_MIN_MASS)
           {
-            PLAYER_SCORE += (5 * (int (ar1->entity->mass) / 100));
+	    if(ar1->entity->mass < 1000)
+	      ar1->entity->mass = 1000;
+            PLAYER_SCORE += (5 * (int (ar1->entity->mass) / 1000));
             DestroyAsteroid (ar1);
           }
 
         if (ar2->entity->mass < ASTEROID_MIN_MASS)
           {
-            PLAYER_SCORE += (5 * (int (ar2->entity->mass) / 100));
+	    if(ar2->entity->mass < 1000)
+	      ar2->entity->mass = 1000;
+	    PLAYER_SCORE += (5 * (int (ar2->entity->mass) / 1000));
             DestroyAsteroid (ar2);
           }
 
@@ -2635,12 +2663,7 @@ extern
                                (*a)->entity->position->x,
                                (*b)->y - (*a)->entity->position->y, (*b)->a);
                 a = temp;		
-		/*
-		a = temp;
-                delete (*b);
-                BULLET_LIST.erase (b);
-                goto escape;
-		*/
+
 		delete(*b);
 		b = BULLET_LIST.erase(b);
                 goto escape;
